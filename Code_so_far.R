@@ -16,6 +16,7 @@ raw.dataDIR <- eurlex::elx_make_query(
   include_force = TRUE, 
   include_date = TRUE,
   include_corrigenda = FALSE,
+  include_eurovoc = TRUE
 )  |> eurlex::elx_run_query()
 
 library(stringr)
@@ -36,6 +37,7 @@ raw.dataREG <- eurlex::elx_make_query(
   include_force = TRUE, 
   include_date = TRUE,
   include_corrigenda = FALSE,
+    include_eurovoc = TRUE
 )  |> eurlex::elx_run_query()
 
 library(stringr)
@@ -55,3 +57,9 @@ total_regs <- rbind(internalmarketREG1, internalmarketREG2, internalmarketREG3,
                     internalmarketREG4, internalmarketREG5, internalmarketREG6,
                     internalmarketREG7)
 total_data <- rbind(total_dirs, total_regs)
+
+#extract language text
+
+legal.acts <- data.frame(CELEX=total_data$celex, 
+                           text=unlist(lapply(total_data$work, elx_fetch_data, language_1 = "en", type = "text")))
+  
