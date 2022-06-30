@@ -1,0 +1,232 @@
+#internal market legislation EU
+#Step 1: load packages
+
+library(eurlex) # for the data
+library(dplyr) # for working with the data
+library(ggplot2) # for plotting
+library(ggiraph) # interactive plotting
+library(stringr)
+library(wordcloud2)
+library(textstem)
+
+
+#Step 2: get the data - directives - 374 internal market directives since 1992
+
+raw.dataDIR <- eurlex::elx_make_query(
+  resource_type = "directive", sector = "3", #3-legal acts
+  include_lbs = TRUE, 
+  include_force = TRUE, 
+  include_date = TRUE,
+  include_corrigenda = FALSE,
+)  |> eurlex::elx_run_query()
+
+#with eurovoc - heavier because multiple eurovoc entry per legal act
+
+raw.dataDIR2 <- eurlex::elx_make_query(
+  resource_type = "directive", sector = "3", #3-legal acts
+  include_lbs = TRUE, 
+  include_force = TRUE, 
+  include_date = TRUE,
+  include_corrigenda = FALSE,
+  include_eurovoc = TRUE
+)  |> eurlex::elx_run_query()
+
+
+internalmarketDIR1 <- filter(raw.dataDIR, lbcelex == "11992E100A") #Maastricht
+internalmarketDIR2 <- filter(raw.dataDIR, lbcelex == "11997E095") #Amsterdam
+internalmarketDIR3 <- filter(raw.dataDIR, lbcelex == "12002E095") #Nice
+internalmarketDIR4 <- filter(raw.dataDIR, lbcelex == "12006E095") #consolidated
+internalmarketDIR5 <- filter(raw.dataDIR, lbcelex == "12010E114") #Lisbon
+internalmarketDIR6 <- filter(raw.dataDIR, lbcelex == "12012E114")
+internalmarketDIR7 <- filter(raw.dataDIR, lbcelex == "12016E114")
+
+#with eurovoc - heavier because multiple eurovoc entry per legal act
+
+internalmarketDIR1EV <- filter(raw.dataDIR2, lbcelex == "11992E100A") #Maastricht
+internalmarketDIR2EV <- filter(raw.dataDIR2, lbcelex == "11997E095") #Amsterdam
+internalmarketDIR3EV <- filter(raw.dataDIR2, lbcelex == "12002E095") #Nice
+internalmarketDIR4EV <- filter(raw.dataDIR2, lbcelex == "12006E095") #consolidated
+internalmarketDIR5EV <- filter(raw.dataDIR2, lbcelex == "12010E114") #Lisbon
+internalmarketDIR6EV <- filter(raw.dataDIR2, lbcelex == "12012E114")
+internalmarketDIR7EV <- filter(raw.dataDIR2, lbcelex == "12016E114")
+
+total_dirsEV <- rbind(internalmarketDIR1EV, internalmarketDIR2EV, internalmarketDIR3EV,
+                    internalmarketDIR4EV, internalmarketDIR5EV, internalmarketDIR6EV,
+                    internalmarketDIR7EV)
+
+#Step 2: get the data - regulations - 251 internal market regulations since 1992
+
+raw.dataREG <- eurlex::elx_make_query(
+  resource_type = "manual", manual_type = "REG", sector = "3", #3-legal acts
+    include_lbs = TRUE, 
+    include_force = TRUE, 
+    include_date = TRUE,
+    include_corrigenda = FALSE,
+  include_eurovoc = TRUE
+  )  |> eurlex::elx_run_query()
+  
+#with eurovoc - heavier because multiple eurovoc entry per legal act
+
+raw.dataREG2 <- eurlex::elx_make_query(
+  resource_type = "manual", manual_type = "REG", sector = "3", #3-legal acts
+  include_lbs = TRUE, 
+  include_force = TRUE, 
+  include_date = TRUE,
+  include_corrigenda = FALSE,
+  include_eurovoc = TRUE
+)  |> eurlex::elx_run_query()
+ 
+  internalmarketREG1 <- filter(raw.dataREG, lbcelex == "11992E100A") #Maastricht
+  internalmarketREG2 <- filter(raw.dataREG, lbcelex == "11997E095") #Amsterdam
+  internalmarketREG3 <- filter(raw.dataREG, lbcelex == "12002E095") #Nice
+  internalmarketREG4 <- filter(raw.dataREG, lbcelex == "12006E095") #consolidated
+  internalmarketREG5 <- filter(raw.dataREG, lbcelex == "12010E114") #Lisbon
+  internalmarketREG6 <- filter(raw.dataREG, lbcelex == "12012E114")
+  internalmarketREG7 <- filter(raw.dataREG, lbcelex == "12016E114")
+  
+  #with eurovoc - heavier because multiple eurovoc entry per legal act
+  
+  internalmarketREG1EV <- filter(raw.dataREG2, lbcelex == "11992E100A") #Maastricht
+  internalmarketREG2EV <- filter(raw.dataREG2, lbcelex == "11997E095") #Amsterdam
+  internalmarketREG3EV <- filter(raw.dataREG2, lbcelex == "12002E095") #Nice
+  internalmarketREG4EV <- filter(raw.dataREG2, lbcelex == "12006E095") #consolidated
+  internalmarketREG5EV <- filter(raw.dataREG2, lbcelex == "12010E114") #Lisbon
+  internalmarketREG6EV <- filter(raw.dataREG2, lbcelex == "12012E114")
+  internalmarketREG7EV <- filter(raw.dataREG2, lbcelex == "12016E114")
+  
+  total_regsEV <- rbind(internalmarketREG1EV, internalmarketREG2EV, internalmarketREG3EV,
+                      internalmarketREG4EV, internalmarketREG5EV, internalmarketREG6EV,
+                      internalmarketREG7EV)
+  
+  #binding of different dataframes
+  
+  total_dirs <- rbind(internalmarketDIR1, internalmarketDIR2, internalmarketDIR3,
+                      internalmarketDIR4, internalmarketDIR5, internalmarketDIR6,
+                      internalmarketDIR7)
+  total_regs <- rbind(internalmarketREG1, internalmarketREG2, internalmarketREG3,
+                      internalmarketREG4, internalmarketREG5, internalmarketREG6,
+                      internalmarketREG7)
+  total_data <- rbind(total_dirs, total_regs)
+  
+  total_dataEV <- rbind(total_dirsEV, total_regsEV)
+  
+  #attention: very heavy file
+  
+  legal.acts <- data.frame(CELEX=total_data$celex, 
+                           text=unlist(lapply(total_data$work, elx_fetch_data, language_1 = "en", type = "text")))
+  
+# creating the eurovoc table
+
+eurovoc_table_REGs <- elx_label_eurovoc(uri_eurovoc = total_regsEV$eurovoc)
+eurovoc_table_DIRs <- elx_label_eurovoc(uri_eurovoc = total_dirsEV$eurovoc)
+
+
+# counts 
+
+countsDIR <- total_dirsEV %>% 
+  group_by(eurovoc) %>% 
+  count()
+
+countsREG <- total_regsEV %>% 
+  group_by(eurovoc) %>% 
+  count()
+
+
+#wordcloud - directives all
+
+left_join(total_dirsEV,eurovoc_table_DIRs,by = "eurovoc") -> DIR_EV
+
+DIR_EV %>%
+  group_by(labels) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))  -> term.frequencyDIR
+
+wordcloud2(term.frequencyDIR)
+
+#wordcloud - regulations all
+
+left_join(total_regsEV,eurovoc_table_REGs,by = "eurovoc") -> REG_EV
+
+REG_EV %>%
+  group_by(labels) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))  -> term.frequencyREG
+
+wordcloud2(term.frequencyREG)
+
+#wordcloud - regulations early & later
+
+left_join(internalmarketREG1EV,eurovoc_table_REGs,by = "eurovoc") -> REG_EV1992
+
+REG_EV1992 %>%
+  group_by(labels) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))  -> term.frequencyREG1992
+
+wordcloud2(term.frequencyREG1992)
+
+left_join(internalmarketREG7EV,eurovoc_table_REGs,by = "eurovoc") -> REG_EV2016
+
+REG_EV2016 %>%
+  group_by(labels) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))  -> term.frequencyREG2016
+
+wordcloud2(term.frequencyREG2016)
+
+# word frequency regulacje wszystkie z eurovoc
+
+#eurovoc tables juz wyzej
+
+EUROVOC_REG1 <- cbind(internalmarketREG1EV,
+                                 unlist(lapply(internalmarketREG1EV$work, elx_fetch_data, language_1 = "en", type = "title")))
+
+EUROVOC_REG2 <- cbind(total_regsEV,
+                      unlist(lapply(total_regsEV$work, elx_fetch_data, language_1 = "en", type = "title")))
+
+
+EUROVOC_REG2%>%
+  left_join(eurovoc_table_REGs) -> EUROVOC_REG2
+
+EUROVOC_REG2 %>%
+  ggplot(aes(labels, fill=celex)) +
+  geom_bar(show.legend = TRUE, color = 'white')+
+  coord_flip()+theme_bw()
+
+
+# ======== brudnopis ======
+
+#joinining columns =- template
+
+left_join(eurovoc_table_REG7,internalmarketREG7_EV,by = "eurovoc") -> REG_EV
+
+
+#making the plot
+
+example <- head(REG_EV, 10)
+
+example$'callret-3'<- as.Date(example$'callret-3', format= "%Y-%m-%d")
+
+example %>%
+  ggplot(aes(labels, fill=celex)) +
+  geom_bar(show.legend = TRUE, color = 'white')+
+  coord_flip()+theme_bw()
+
+example %>%
+  ggplot(aes(labels, fill="callret-3")) +
+  geom_bar(show.legend = TRUE, color = 'white')+
+  coord_flip()+theme_bw()
+
+#word.cloud
+
+wordcloud2(eurovoc_table_REG1)
+
+# eurovoc data frames still have same no of regulations 
+
+internalmarketREG7_EV %>%
+  group_by(celex) -> REG7_EV2
+
+#export
+
+  write.csv(legal.acts,"/Data R/legalacts.csv", row.names = FALSE)
+  
