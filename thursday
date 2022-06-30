@@ -75,8 +75,7 @@ raw.dataREG2 <- eurlex::elx_make_query(
   include_corrigenda = FALSE,
   include_eurovoc = TRUE
 )  |> eurlex::elx_run_query()
-  library(stringr)
-  
+ 
   internalmarketREG1 <- filter(raw.dataREG, lbcelex == "11992E100A") #Maastricht
   internalmarketREG2 <- filter(raw.dataREG, lbcelex == "11997E095") #Amsterdam
   internalmarketREG3 <- filter(raw.dataREG, lbcelex == "12002E095") #Nice
@@ -99,6 +98,8 @@ raw.dataREG2 <- eurlex::elx_make_query(
                       internalmarketREG4EV, internalmarketREG5EV, internalmarketREG6EV,
                       internalmarketREG7EV)
   
+  #binding of different dataframes
+  
   total_dirs <- rbind(internalmarketDIR1, internalmarketDIR2, internalmarketDIR3,
                       internalmarketDIR4, internalmarketDIR5, internalmarketDIR6,
                       internalmarketDIR7)
@@ -114,54 +115,40 @@ raw.dataREG2 <- eurlex::elx_make_query(
   legal.acts <- data.frame(CELEX=total_data$celex, 
                            text=unlist(lapply(total_data$work, elx_fetch_data, language_1 = "en", type = "text")))
   
-
-# eurovoc data frames still have same no of regulations 
-
-internalmarketREG7_EV %>%
-  group_by(celex) -> REG7_EV2
-
 # creating the eurovoc table
 
-eurovoc_table_REGs <- elx_label_eurovoc(uri_eurovoc = internalmarketREG7_EV$eurovoc)
+eurovoc_table_REGs <- elx_label_eurovoc(uri_eurovoc = total_regsEV$eurovoc)
+eurovoc_table_DIRs <- elx_label_eurovoc(uri_eurovoc = total_dirsEV$eurovoc)
 
-internalmarketREG7_EV %>%  
-  group_by(eurovoc) %>% 
-  dplyr::summarize(count = n()) -> timespans
 
-counts <- internalmarketREG7_EV %>% 
+# counts 
+
+countsDIR <- total_dirsEV %>% 
   group_by(eurovoc) %>% 
   count()
 
-df <- head(counts, 10)
+countsREG <- total_regsEV %>% 
+  group_by(eurovoc) %>% 
+  count()
 
-left_join(counts,eurovoc_table_REG7,by = "eurovoc") -> REG_EV2
+#wordcloud
 
-df2 <- left_join(internalmarketREG7_EV, eurovoc_table_REG7, by="eurovoc")
+left_join(countsDIR,eurovoc_table_DIRs,by = "eurovoc") -> DIR_EV
 
-library(wordcloud2)
-
-df2 %>%
+DIR_EV %>%
   group_by(labels) %>%
   summarise(count = n()) %>%
-  arrange(desc(count))  -> term.frequency
+  arrange(desc(count))  -> term.frequencyDIR
 
-library(wordcloud2)
-wordcloud2(term.frequency)
+wordcloud2(term.frequencyDIR)
 
 
-eurovoc_table_REG6 <- elx_label_eurovoc(uri_eurovoc = internalmarketREG6_EV$eurovoc)
-eurovoc_table_REG5 <- elx_label_eurovoc(uri_eurovoc = internalmarketREG5_EV$eurovoc)
-eurovoc_table_REG4 <- elx_label_eurovoc(uri_eurovoc = internalmarketREG4_EV$eurovoc)
-eurovoc_table_REG3 <- elx_label_eurovoc(uri_eurovoc = internalmarketREG3_EV$eurovoc)
-eurovoc_table_REG2 <- elx_label_eurovoc(uri_eurovoc = internalmarketREG2_EV$eurovoc)
-eurovoc_table_REG1 <- elx_label_eurovoc(uri_eurovoc = internalmarketREG1_EV$eurovoc)
+# ======== brudnopis ======
 
-#connecting eurovoc to individual regulations (total for years 2016-2022 = 104 regulations)
-
-#REG_EV <- cbind(labels, unlist(lapply(internalmarketREG7_EV$celex, elx_fetch_data, language_1 = "en", type = "title")))
-
+#joinining columns =- template
 
 left_join(eurovoc_table_REG7,internalmarketREG7_EV,by = "eurovoc") -> REG_EV
+
 
 #making the plot
 
@@ -179,11 +166,14 @@ example %>%
   geom_bar(show.legend = TRUE, color = 'white')+
   coord_flip()+theme_bw()
 
-
-
 #word.cloud
 
 wordcloud2(eurovoc_table_REG1)
+
+# eurovoc data frames still have same no of regulations 
+
+internalmarketREG7_EV %>%
+  group_by(celex) -> REG7_EV2
 
 #export
 
