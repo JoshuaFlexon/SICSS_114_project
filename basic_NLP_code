@@ -1,0 +1,36 @@
+library(tidytext)
+library(textstem)
+library(tidyverse)
+library(tm)
+
+# custom_stopwords <- read.csv ("/Users/fgeburczyk/data_science_master_folder/SICSS/Project/custom_stopwords.csv", header = FALSE)
+# custom_stopwords <- as.character(custom_stopwords$V1)
+# custom_stopwords <- c(custom_stopwords, stopwords())
+
+legalacts %>%
+  unnest_tokens(word, text, token = "ngrams", n = 1) %>% 
+  anti_join(stop_words) %>% 
+  mutate(word = lemmatize_words(word)) -> legalacts
+
+legalacts$word <- ifelse(str_remove_all(legalacts$word, "\\d") == "",
+                           NA,
+                           str_remove_all(legalacts$word,"\\d"))
+
+legalacts <- na.omit(legalacts)
+
+legalacts %>%
+  group_by(word) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  slice(100:150) -> term.frequency # Note that this shows the 100th to 150th most frequent words.
+
+library(wordcloud2)
+wordcloud2(term.frequency)
+
+library(ggplot2)
+ggplot(data = term.frequency)+
+  geom_bar(aes(x = reorder(word, count), y = count), stat = "identity",  fill = "#93AA00")+
+  ylab("")+
+  xlab("")+
+  coord_flip()+
+  theme_bw()
