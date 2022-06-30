@@ -1,0 +1,207 @@
+#internal market legislation EU
+#Step 1: load packages
+
+library(eurlex) # for the data
+library(dplyr) # for working with the data
+library(ggplot2) # for plotting
+library(ggiraph) # interactive plotting
+library(stringr)
+library(wordcloud2)
+library(textstem)
+
+
+#Step 2: get the data - directives - 319 internal market directives since 1992
+
+raw.dataDIR <- eurlex::elx_make_query(
+  resource_type = "directive", sector = "3", #3-legal acts
+  include_lbs = TRUE, 
+  include_force = TRUE, 
+  include_date = TRUE,
+  include_corrigenda = FALSE,
+)  |> eurlex::elx_run_query()
+
+raw.dataDIR2 <- eurlex::elx_make_query(
+  resource_type = "directive", sector = "3", #3-legal acts
+  include_lbs = TRUE, 
+  include_force = TRUE, 
+  include_date = TRUE,
+  include_corrigenda = FALSE,
+  include_eurovoc = TRUE
+)  |> eurlex::elx_run_query()
+
+
+internalmarketDIR1 <- filter(raw.dataDIR, lbcelex == "11992E100A") #Maastricht
+internalmarketDIR2 <- filter(raw.dataDIR, lbcelex == "11997E095") #Amsterdam
+internalmarketDIR3 <- filter(raw.dataDIR, lbcelex == "12002E095") #Nice
+internalmarketDIR4 <- filter(raw.dataDIR, lbcelex == "12006E095") #consolidated
+internalmarketDIR5 <- filter(raw.dataDIR, lbcelex == "12010E114") #Lisbon
+internalmarketDIR6 <- filter(raw.dataDIR, lbcelex == "12012E114")
+internalmarketDIR7 <- filter(raw.dataDIR, lbcelex == "12016E114")
+
+#Step 2: get the data - regulations - 186 internal market regulations since 1992
+
+raw.dataREG <- eurlex::elx_make_query(
+  resource_type = "manual", manual_type = "REG", sector = "3", #3-legal acts
+    include_lbs = TRUE, 
+    include_force = TRUE, 
+    include_date = TRUE,
+    include_corrigenda = FALSE,
+  include_eurovoc = TRUE
+  )  |> eurlex::elx_run_query()
+  
+raw.dataREG2 <- eurlex::elx_make_query(
+  resource_type = "manual", manual_type = "REG", sector = "3", #3-legal acts
+  include_lbs = TRUE, 
+  include_force = TRUE, 
+  include_date = TRUE,
+  include_corrigenda = FALSE,
+  include_eurovoc = TRUE
+)  |> eurlex::elx_run_query()
+  library(stringr)
+  
+  internalmarketREG1 <- filter(raw.dataREG, lbcelex == "11992E100A") #Maastricht
+  internalmarketREG2 <- filter(raw.dataREG, lbcelex == "11997E095") #Amsterdam
+  internalmarketREG3 <- filter(raw.dataREG, lbcelex == "12002E095") #Nice
+  internalmarketREG4 <- filter(raw.dataREG, lbcelex == "12006E095") #consolidated
+  internalmarketREG5 <- filter(raw.dataREG, lbcelex == "12010E114") #Lisbon
+  internalmarketREG6 <- filter(raw.dataREG, lbcelex == "12012E114")
+  internalmarketREG7 <- filter(raw.dataREG, lbcelex == "12016E114")
+  
+  total_dirs <- rbind(internalmarketDIR1, internalmarketDIR2, internalmarketDIR3,
+                      internalmarketDIR4, internalmarketDIR5, internalmarketDIR6,
+                      internalmarketDIR7)
+  total_regs <- rbind(internalmarketREG1, internalmarketREG2, internalmarketREG3,
+                      internalmarketREG4, internalmarketREG5, internalmarketREG6,
+                      internalmarketREG7)
+  total_data <- rbind(total_dirs, total_regs)
+  
+  legal.acts <- data.frame(CELEX=total_data$celex, 
+                           text=unlist(lapply(total_data$work, elx_fetch_data, language_1 = "en", type = "text")))
+  
+  #test reg7 for word analysis
+  
+  
+  
+  REG7text <- data.frame(CELEX=internalmarketREG7$celex,
+                           text=unlist(lapply(internalmarketREG7$work, elx_fetch_data,
+                                              language_1 = "en",
+                                              type = "text")))
+  
+
+  
+REG7text %>%  
+    unnest_tokens(word, text) %>% 
+    anti_join(stop_words) %>%
+    mutate(word = lemmatize_words(word)) %>% 
+    filter(str_detect(word ,pattern = "\\d", negate = TRUE)) %>% 
+    group_by(CELEX, word) %>%
+    summarise(n = n()) %>%
+    bind_tf_idf(word, CELEX, n) %>% 
+    arrange(desc(tf_idf)) %>%
+    group_by(CELEX) %>% 
+    slice(1:10) %>%
+    ungroup() %>%
+    ggplot(aes(word, tf_idf, fill = CELEX)) +
+    geom_col(show.legend = FALSE) +
+    labs(x = NULL, y = "tf-idf") +
+    facet_wrap(~CELEX, ncol = 3, scales = "free") +
+    coord_flip()+
+    theme_bw()
+  
+#question : how to make it more readable for large numbers? is there anyway to aggregate this now?
+
+# eurovoc words 
+
+raw.dataREG_EV <- eurlex::elx_make_query(
+  resource_type = "manual", manual_type = "REG", sector = "3", #3-legal acts
+  include_lbs = TRUE,
+  include_force = TRUE,
+  include_date = TRUE,
+  include_corrigenda = FALSE,
+  include_eurovoc = TRUE,
+)  |> eurlex::elx_run_query()
+
+internalmarketREG7_EV <- filter(raw.dataREG_EV, lbcelex == "12016E114")
+internalmarketREG6_EV <- filter(raw.dataREG_EV, lbcelex == "12012E114")
+internalmarketREG5_EV <- filter(raw.dataREG_EV, lbcelex == "12010E114")
+internalmarketREG4_EV <- filter(raw.dataREG_EV, lbcelex == "12006E095")
+internalmarketREG3_EV <- filter(raw.dataREG_EV, lbcelex == "12002E095")
+internalmarketREG2_EV <- filter(raw.dataREG_EV, lbcelex == "11997E095")
+internalmarketREG1_EV <- filter(raw.dataREG_EV, lbcelex == "11992E100A")
+
+internalmarketREG1 <- filter(raw.dataREG, lbcelex == "11992E100A") #Maastricht
+internalmarketREG2 <- filter(raw.dataREG, lbcelex == "11997E095") #Amsterdam
+internalmarketREG3 <- filter(raw.dataREG, lbcelex == "12002E095")
+
+internalmarketREG7_EV %>%
+  group_by(celex) -> REG7_EV2
+
+# creating the eurovoc table
+
+eurovoc_table_REG7 <- elx_label_eurovoc(uri_eurovoc = internalmarketREG7_EV$eurovoc)
+
+internalmarketREG7_EV %>%  
+  group_by(eurovoc) %>% 
+  dplyr::summarize(count = n()) -> timespans
+
+counts <- internalmarketREG7_EV %>% 
+  group_by(eurovoc) %>% 
+  count()
+
+df <- head(counts, 10)
+
+left_join(counts,eurovoc_table_REG7,by = "eurovoc") -> REG_EV2
+
+df2 <- left_join(internalmarketREG7_EV, eurovoc_table_REG7, by="eurovoc")
+
+library(wordcloud2)
+
+df2 %>%
+  group_by(labels) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))  -> term.frequency
+
+library(wordcloud2)
+wordcloud2(term.frequency)
+
+
+eurovoc_table_REG6 <- elx_label_eurovoc(uri_eurovoc = internalmarketREG6_EV$eurovoc)
+eurovoc_table_REG5 <- elx_label_eurovoc(uri_eurovoc = internalmarketREG5_EV$eurovoc)
+eurovoc_table_REG4 <- elx_label_eurovoc(uri_eurovoc = internalmarketREG4_EV$eurovoc)
+eurovoc_table_REG3 <- elx_label_eurovoc(uri_eurovoc = internalmarketREG3_EV$eurovoc)
+eurovoc_table_REG2 <- elx_label_eurovoc(uri_eurovoc = internalmarketREG2_EV$eurovoc)
+eurovoc_table_REG1 <- elx_label_eurovoc(uri_eurovoc = internalmarketREG1_EV$eurovoc)
+
+#connecting eurovoc to individual regulations (total for years 2016-2022 = 104 regulations)
+
+#REG_EV <- cbind(labels, unlist(lapply(internalmarketREG7_EV$celex, elx_fetch_data, language_1 = "en", type = "title")))
+
+
+left_join(eurovoc_table_REG7,internalmarketREG7_EV,by = "eurovoc") -> REG_EV
+
+#making the plot
+
+example <- head(REG_EV, 10)
+
+example$'callret-3'<- as.Date(example$'callret-3', format= "%Y-%m-%d")
+
+example %>%
+  ggplot(aes(labels, fill=celex)) +
+  geom_bar(show.legend = TRUE, color = 'white')+
+  coord_flip()+theme_bw()
+
+example %>%
+  ggplot(aes(labels, fill="callret-3")) +
+  geom_bar(show.legend = TRUE, color = 'white')+
+  coord_flip()+theme_bw()
+
+
+
+#word.cloud
+
+wordcloud2(eurovoc_table_REG1)
+
+#export
+
+  write.csv(legal.acts,"/Users/apsmolenska/Documents/OneDrive - Istituto Universitario Europeo/Projects/Data R/legalacts.csv", row.names = FALSE)
+  
