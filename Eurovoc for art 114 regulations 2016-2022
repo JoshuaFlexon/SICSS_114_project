@@ -1,0 +1,32 @@
+# eurovoc words 
+
+raw.dataREG_EV <- eurlex::elx_make_query(
+  resource_type = "manual", manual_type = "REG", sector = "3", #3-legal acts
+  include_lbs = TRUE,
+  include_force = TRUE,
+  include_date = TRUE,
+  include_corrigenda = FALSE,
+  include_eurovoc = TRUE,
+)  |> eurlex::elx_run_query()
+internalmarketREG7_EV <- filter(raw.dataREG_EV, lbcelex == "12016E114")
+
+internalmarketREG7_EV %>%
+  group_by(celex) -> REG7_EV2
+
+# creating the eurovoc table
+
+eurovoc_table <- elx_label_eurovoc(uri_eurovoc = internalmarketREG7_EV$eurovoc)
+
+#connecting eurovoc to individual regulations (total for years 2016-2022 = 104 regulations)
+
+REG_EV <- cbind(eurovoc_table, unlist(lapply(internalmarketREG7_EV$celex, elx_fetch_data, language_1 = "en", type = "title")))
+
+REG_EV %>%
+  left_join(eurovoc_table) -> REG_EV
+
+#making the plot
+
+REG_EV %>%
+  ggplot(aes(labels, fill=celex)) +
+  geom_bar(show.legend = TRUE, color = 'white')+
+  coord_flip()+theme_bw()
